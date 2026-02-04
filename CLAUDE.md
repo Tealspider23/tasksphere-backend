@@ -48,34 +48,53 @@ The project follows a conventional **Spring Boot** layered architecture:
 
 ## Claude Operating Rules (Mandatory)
 
-### Commit workflow
-When preparing a commit or when the user types "commit":
+### Automated Commit Workflow
+
+When preparing commits or when the user types "commit":
 
 1. Automatically run:
     - `git status --porcelain`
     - `git diff`
-2. Analyze the changes and perform a lightweight code review.
-3. Identify ONE logical, complete change suitable for a single commit.
-4. Ignore unfinished, experimental, or unrelated code.
-5. Propose ONE commit including:
-    - Summary of the change
-    - Files to be included
-    - A conventional commit message
-6. Ask the user to approve, edit, or skip.
-7. NEVER commit or push without explicit user approval.
 
-### Code review behavior
-- Point out security risks, especially around authentication and authorization.
-- Flag architectural violations (controller logic leakage, entity exposure, etc.).
-- Flag unused imports, dead code, and obvious smells.
-- Do NOT refactor code unless explicitly asked.
-- Do NOT apply changes automatically.
+2. Analyze ALL current changes.
 
-### General behavior
-- Prefer clarity over cleverness.
-- Prefer small, incremental changes.
-- Avoid premature abstractions.
-- Be explicit about tradeoffs and assumptions.
+3. Group changes into the MINIMUM number of logical commits.
+    - Prefer 1 commit if possible.
+    - Use multiple commits only if concerns are clearly separate.
+
+4. For each proposed commit:
+    - Select relevant files automatically.
+    - Write a clean conventional commit message.
+    - Provide a short summary.
+
+5. Present ALL proposed commits at once in this format:
+
+   Commit Plan:
+    - Commit 1: <message>
+      Files: ...
+    - Commit 2: <message>
+      Files: ...
+
+6. Ask the user ONCE:
+
+   "Proceed with this commit plan? (yes/edit/cancel)"
+
+7. If approved, execute the following steps in order for each commit:
+
+   a. Stage files:
+   `git add <file1> <file2> ...`
+
+   b. Create commit:
+   `git commit -m "<commit message>"`
+
+8. After all commits are created, ask:
+
+   "Push to remote? (yes/no)"
+
+9. If approved, run:
+   `git push`
+
+10. Do NOT skip steps, and do NOT invent commands.
 
 
 Feel free to refer to the README or the `HELP.md` for additional setup instructions or external documentation links.
