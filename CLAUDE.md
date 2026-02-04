@@ -17,8 +17,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 The project follows a conventional **Spring Boot** layered architecture:
 
-1. **Controllers** (`src/main/java/com/tasksphere/controller`) – Handle HTTP requests and responses. They expose REST endpoints and delegate to services.
-2. **Services** (`src/main/java/com/tasksphere/service`) – Contain business logic. Each service typically operates on a single domain concept (e.g., `UserService`, `TaskService`).
+1. **Controllers** (`src/main/java/com/tasksphere/controller`) – Handle HTTP requests and responses. They expose REST endpoints and delegate to services (e.g., `TeamController`).
+2. **Services** (`src/main/java/com/tasksphere/service`) – Contain business logic. Each service typically operates on a single domain concept (e.g., `UserService`, `TaskService`, `TeamService`).
 3. **Repositories** (`src/main/java/com/tasksphere/repository`) – Spring Data JPA interfaces for persistence. They abstract database interactions and are injected into services.
 4. **Entities** (`src/main/java/com/tasksphere/model`) – JPA entity classes that map to database tables. They are never returned directly to clients.
 5. **DTOs** (`src/main/java/com/tasksphere/dto`) – Plain data transfer objects used in controller responses and request bodies. They shape the API contract.
