@@ -85,7 +85,7 @@ public class TeamService {
                 .getAuthentication()
                 .getName();
 
-        User user = userRepository.findByEmail(email).orElseThrow();
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found: " + email));
 
         return teamRepository.findByOwner(user)
                 .stream()
@@ -95,7 +95,7 @@ public class TeamService {
 
     public List<String> getMembers(Long teamId) {
         Team team = teamRepository.findById(teamId)
-                    .orElseThrow();
+                    .orElseThrow(() -> new RuntimeException("Team not found : " + teamId ));
 
         return teamMemberRepository.findByTeam(team)
                 .stream()

@@ -28,6 +28,11 @@ public class Task extends BaseEntity{
     @JsonIgnore
     private User user;  // if task is ever converted to JSON , ignore the user field (@JSONIGNORE working)
 
+    @ManyToOne
+    @JoinColumn(name = "team_id")
+    private Team team;
+
+
     public Task(){} // for conversion from java object to json
 
     public Long getId(){
@@ -65,5 +70,9 @@ public class Task extends BaseEntity{
     public void setUser(User user){
         this.user = user;
     }
+
+    public Team getTeam() {return team;}
+
+    public void setTeam(Team team) {this.team = team; }
 }
 

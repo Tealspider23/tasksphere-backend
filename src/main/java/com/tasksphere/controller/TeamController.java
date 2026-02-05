@@ -1,10 +1,15 @@
 package com.tasksphere.controller;
 
 
+import com.tasksphere.dto.TaskRequestDto;
+import com.tasksphere.dto.TaskResponseDto;
 import com.tasksphere.dto.TeamRequestDto;
 import com.tasksphere.dto.TeamResponseDto;
 import com.tasksphere.model.TeamInvitation;
+import com.tasksphere.service.TaskService;
 import com.tasksphere.service.TeamService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,9 +19,11 @@ import java.util.List;
 public class TeamController {
 
     private final TeamService teamService;
+    private final TaskService taskService;
 
-    public TeamController(TeamService teamService){
+    public TeamController(TeamService teamService , TaskService taskService){
         this.teamService = teamService;
+        this.taskService = taskService;
     }
 
     @PostMapping
@@ -47,5 +54,15 @@ public class TeamController {
     @PostMapping("/invites/{inviteId}/accept")
     public void accept(@PathVariable Long inviteId){
         teamService.acceptInvite(inviteId);
+    }
+
+    @PostMapping("/{id}/tasks")
+    public TaskResponseDto createTeamTask(@PathVariable Long id , @RequestBody TaskRequestDto dto){
+        return taskService.createTeamTask(id,dto);
+    }
+
+    @GetMapping("/{id}/tasks")
+    public Page<TaskResponseDto> getTeamTasks(@PathVariable Long id , Pageable pageable){
+        return taskService.getTeamTasks(id, pageable);
     }
 }

@@ -55,6 +55,4 @@ public class TaskController {
          return taskService.getAllTasksForAdmin(pageable);
     }
 
-
-
 }

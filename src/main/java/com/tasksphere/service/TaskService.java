@@ -3,12 +3,16 @@ package com.tasksphere.service;
 import com.tasksphere.enums.TaskStatus;
 import com.tasksphere.exception.TaskNotFoundException;
 import com.tasksphere.model.Task;
+import com.tasksphere.model.Team;
+import com.tasksphere.model.TeamMember;
 import com.tasksphere.model.User;
 import com.tasksphere.repository.TaskRepository;
 import com.tasksphere.dto.TaskRequestDto;
 import com.tasksphere.dto.TaskResponseDto;
 
 
+import com.tasksphere.repository.TeamMemberRepository;
+import com.tasksphere.repository.TeamRepository;
 import com.tasksphere.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
@@ -23,10 +27,14 @@ public class TaskService {
 
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
+    private final TeamRepository teamRepository;
+    private final TeamMemberRepository teamMemberRepository;
 
-    public TaskService(TaskRepository taskRepository , UserRepository userRepository){
+    public TaskService(TaskRepository taskRepository , UserRepository userRepository , TeamRepository teamRepository , TeamMemberRepository teamMemberRepository){
         this.taskRepository = taskRepository;
         this.userRepository = userRepository;
+        this.teamRepository = teamRepository;
+        this.teamMemberRepository = teamMemberRepository;
     }
 
     public TaskResponseDto createTask(TaskRequestDto dto){
@@ -114,5 +122,53 @@ public class TaskService {
         return taskRepository.findAll(pageable)
                 .map(TaskResponseDto::fromEntity);
     }
+
+    public TaskResponseDto createTeamTask(Long teamId, TaskRequestDto dto) {
+        User user = getCurrentUser();
+
+        Team team = teamRepository.findById(teamId).orElseThrow(() -> new RuntimeException("team not found : " + teamId));
+
+        TeamMember member = teamMemberRepository
+                .findByTeamAndUser(team,user)
+                .orElseThrow(() -> new RuntimeException("Not Team Member"));
+
+        Task task = new Task();
+        task.setTitle(dto.getTitle());
+        task.setDescription(dto.getDescription());
+        task.setStatus(dto.getStatus());
+        task.setUser(user);
+        task.setTeam(team);
+
+        Task saved = taskRepository.save(task);
+
+        return TaskResponseDto.fromEntity(saved);
+    }
+
+    public Page<TaskResponseDto> getTeamTasks(Long teamId, Pageable pageable){
+
+        User user = getCurrentUser();
+
+        Team team = teamRepository.findById(teamId).orElseThrow(() -> new RuntimeException("Team not found : " + teamId));
+
+        teamMemberRepository
+                .findByTeamAndUser(team , user)
+                .orElseThrow(() -> new RuntimeException("Not team member"));
+
+        return taskRepository.findByTeam(team , pageable)
+                .map(TaskResponseDto::fromEntity);
+    }
+
+    private User getCurrentUser() {
+        String email = SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getName();
+
+        System.out.println("AUTH EMAIL =" + email);
+
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("user not found : " + email));
+    }
+    //
 
 }
