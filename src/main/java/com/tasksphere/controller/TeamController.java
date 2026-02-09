@@ -65,4 +65,34 @@ public class TeamController {
     public Page<TaskResponseDto> getTeamTasks(@PathVariable Long id , Pageable pageable){
         return taskService.getTeamTasks(id, pageable);
     }
+
+    @DeleteMapping("/{id}")
+    public void deleteTeam(@PathVariable Long id) {
+        teamService.deleteTeam(id);
+    }
+
+    @DeleteMapping("/{teamId}/members/{userId}")
+    public void removeMember(@PathVariable Long teamId , @PathVariable Long userId) {
+        teamService.removeMember(teamId , userId);
+    }
+
+    @PostMapping("/{teamId}/members/{userId}/promote")
+    public void promoteMember(@PathVariable Long teamId, @PathVariable Long userId){
+
+        teamService.promoteMember(teamId, userId);
+    }
+
+
+    @PostMapping("/{teamId}/members/{userId}/demote")
+    public void demoteMember(@PathVariable Long teamId, @PathVariable Long userId){
+
+        teamService.demoteMember(teamId, userId);
+    }
+
+    @PostMapping("/{teamId}/transfer/{userId}")
+    public void transferOwnership(@PathVariable Long teamId, @PathVariable Long userId) {
+        teamService.transferOwnership(teamId,userId);
+    }
+
+
 }

@@ -1,6 +1,7 @@
 package com.tasksphere.service;
 
 import com.tasksphere.enums.TaskStatus;
+import com.tasksphere.enums.TeamRole;
 import com.tasksphere.exception.TaskNotFoundException;
 import com.tasksphere.model.Task;
 import com.tasksphere.model.Team;
@@ -126,11 +127,9 @@ public class TaskService {
     public TaskResponseDto createTeamTask(Long teamId, TaskRequestDto dto) {
         User user = getCurrentUser();
 
-        Team team = teamRepository.findById(teamId).orElseThrow(() -> new RuntimeException("team not found : " + teamId));
+        Team team = getTeam(teamId);
 
-        TeamMember member = teamMemberRepository
-                .findByTeamAndUser(team,user)
-                .orElseThrow(() -> new RuntimeException("Not Team Member"));
+        getMemberOrThrow(team,user); //checks membership
 
         Task task = new Task();
         task.setTitle(dto.getTitle());
@@ -169,6 +168,27 @@ public class TaskService {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("user not found : " + email));
     }
-    //
+
+    private void requireOwner(TeamMember member) {
+        if(member.getRole() != TeamRole.OWNER) {
+            throw new RuntimeException("Only owner allowed");
+        }
+    }
+
+    private void requireAdminOrOwner(TeamMember member) {
+        if(member.getRole() == TeamRole.MEMBER) {
+            throw new RuntimeException("Only admin or owner allowed");
+        }
+    }
+
+    private TeamMember getMemberOrThrow(Team team , User user) {
+        return teamMemberRepository.findByTeamAndUser(team,user)
+                .orElseThrow(() -> new RuntimeException("Not a team member"));
+    }
+
+    private Team getTeam(Long teamId) {
+        return teamRepository.findById(teamId)
+                .orElseThrow(() -> new RuntimeException("Team not found"));
+    }
 
 }

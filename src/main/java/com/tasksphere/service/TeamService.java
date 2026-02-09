@@ -2,6 +2,10 @@ package com.tasksphere.service;
 
 import com.tasksphere.dto.TeamRequestDto;
 import com.tasksphere.dto.TeamResponseDto;
+import com.tasksphere.enums.TeamRole;
+import com.tasksphere.exception.BadRequestException;
+import com.tasksphere.exception.ForbiddenException;
+import com.tasksphere.exception.ResourceNotFoundException;
 import com.tasksphere.model.Team;
 import com.tasksphere.model.TeamInvitation;
 import com.tasksphere.model.TeamMember;
@@ -65,7 +69,7 @@ public class TeamService {
         TeamMember member = new TeamMember();
         member.setTeam(saved);
         member.setUser(owner);
-        member.setRole("OWNER");
+        member.setRole(TeamRole.OWNER);
 
         teamMemberRepository.save(member);
 
@@ -74,6 +78,20 @@ public class TeamService {
                 saved.getId(),
                 saved.getName()
         );
+    }
+
+    //Delete team
+
+    public void deleteTeam(Long teamId) {
+
+        User user = getCurrentUser();
+        Team team = getTeam(teamId);
+
+        TeamMember member = getMemberOrThrow(team, user);
+
+        requireOwner(member);
+
+        teamRepository.delete(team);
     }
 
 
@@ -95,7 +113,7 @@ public class TeamService {
 
     public List<String> getMembers(Long teamId) {
         Team team = teamRepository.findById(teamId)
-                    .orElseThrow(() -> new RuntimeException("Team not found : " + teamId ));
+                    .orElseThrow(() -> new ResourceNotFoundException("Team not found : " + teamId ));
 
         return teamMemberRepository.findByTeam(team)
                 .stream()
@@ -105,20 +123,17 @@ public class TeamService {
 
     public void inviteMember(Long teamId, String email){
 
-        Team team = teamRepository.findById(teamId).orElseThrow(() -> new RuntimeException("Team not found"));
+        //replaced earlier logic with functional logic to enhance reusability
+        Team team = getTeam(teamId);
 
-        User inviter = getCurrentUser();
+        User current = getCurrentUser();
 
-        TeamMember member = teamMemberRepository
-                .findByTeamAndUser(team , inviter)
-                .orElseThrow(() -> new RuntimeException("Not a team member"));
+        TeamMember member = getMemberOrThrow(team , current);
 
-        if(!member.getRole().equals("OWNER") && !member.getRole().equals("ADMIN")){
-            throw new RuntimeException("No permission");
-        }
+        requireAdminOrOwner(member);
 
         if(teamInvitationRepository.findByTeamAndEmail(team,email).isPresent()){
-            throw new RuntimeException("Already Invited");
+            throw new BadRequestException("Already Invited");
         }
 
         TeamInvitation invite = new TeamInvitation();
@@ -159,5 +174,142 @@ public class TeamService {
 
         return teamInvitationRepository.findByEmail(user.getEmail());
     }
+
+    private void requireOwner(TeamMember member) {
+        if(member.getRole() != TeamRole.OWNER) {
+            throw new ForbiddenException("Only owner allowed");
+        }
+    }
+
+    private void requireAdminOrOwner(TeamMember member) {
+        if(member.getRole() == TeamRole.MEMBER) {
+            throw new ForbiddenException("Only admin or owner allowed");
+        }
+    }
+
+    private TeamMember getMemberOrThrow(Team team , User user) {
+        return teamMemberRepository.findByTeamAndUser(team,user)
+                .orElseThrow(() -> new RuntimeException("Not a team member"));
+    }
+
+    private Team getTeam(Long teamId) {
+        return teamRepository.findById(teamId)
+                .orElseThrow(() -> new ResourceNotFoundException("Team not found"));
+    }
+
+    public void removeMember(Long teamid , Long userId) {
+
+        User current = getCurrentUser();
+
+        Team team = getTeam(teamid);
+
+        TeamMember requester = getMemberOrThrow(team , current);
+
+        //Admin or owner only
+        requireAdminOrOwner(requester);
+
+        User targetUser = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+
+        TeamMember targetMember = teamMemberRepository.findByTeamAndUser(team,targetUser)
+                .orElseThrow(() -> new RuntimeException("Not a team member"));
+
+        //Owner cannot be removed
+        if(targetMember.getRole() == TeamRole.OWNER){
+            throw new ForbiddenException("Cannot remove owner");
+        }
+
+        teamMemberRepository.delete(targetMember);
+    }
+
+    public void promoteMember(Long teamId , Long userId) {
+
+        User current = getCurrentUser();
+
+        Team team = getTeam(teamId);
+
+        TeamMember requester = getMemberOrThrow(team , current);
+
+        //Only owner
+        requireOwner(requester);
+
+        User targetUser = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        TeamMember targetMember = teamMemberRepository.findByTeamAndUser(team , targetUser)
+                .orElseThrow(() -> new RuntimeException("Not a team member"));
+
+        //Cannot promote owner
+        if(targetMember.getRole() == TeamRole.OWNER) {
+            throw new ForbiddenException("Cannot promote owner");
+        }
+
+        targetMember.setRole(TeamRole.ADMIN);
+
+        teamMemberRepository.save(targetMember);
+    }
+
+    public void demoteMember(Long teamId, Long userId){
+
+        User current = getCurrentUser();
+
+        Team team = getTeam(teamId);
+
+        TeamMember requester = getMemberOrThrow(team, current);
+
+        // Only OWNER
+        requireOwner(requester);
+
+        User targetUser = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        TeamMember targetMember =
+                teamMemberRepository
+                        .findByTeamAndUser(team, targetUser)
+                        .orElseThrow(() -> new RuntimeException("Not a team member"));
+
+        // Cannot demote OWNER
+        if(targetMember.getRole() == TeamRole.OWNER){
+            throw new ForbiddenException("Cannot demote owner");
+        }
+
+        targetMember.setRole(TeamRole.MEMBER);
+
+        teamMemberRepository.save(targetMember);
+    }
+
+    public void transferOwnership(Long teamId, Long newOwnerId){
+
+        User current = getCurrentUser();
+
+        Team team = getTeam(teamId);
+
+        TeamMember currentOwner = getMemberOrThrow(team, current);
+
+        // Must be owner
+        requireOwner(currentOwner);
+
+        User newOwnerUser = userRepository.findById(newOwnerId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        TeamMember newOwner =
+                teamMemberRepository
+                        .findByTeamAndUser(team, newOwnerUser)
+                        .orElseThrow(() -> new RuntimeException("User not in team"));
+
+        // Downgrade old owner
+        currentOwner.setRole(TeamRole.ADMIN);
+
+        // Upgrade new owner
+        newOwner.setRole(TeamRole.OWNER);
+
+        // Update team owner
+        team.setOwner(newOwnerUser);
+
+        teamMemberRepository.save(currentOwner);
+        teamMemberRepository.save(newOwner);
+        teamRepository.save(team);
+    }
+
+
 
 }

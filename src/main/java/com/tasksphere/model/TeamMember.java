@@ -1,6 +1,7 @@
 package com.tasksphere.model;
 
 
+import com.tasksphere.enums.TeamRole;
 import jakarta.persistence.*;
 
 import java.time.Instant;
@@ -26,8 +27,9 @@ public class TeamMember {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String role;
+    private TeamRole role;
 
     @Column(nullable = false)
     private Instant joinedAt = Instant.now();
@@ -40,7 +42,7 @@ public class TeamMember {
 
     public User getUser() { return user; }
 
-    public String getRole() { return role; }
+    public TeamRole getRole() { return role; }
 
     public Instant getJoinedAt() { return joinedAt; }
 
@@ -48,6 +50,6 @@ public class TeamMember {
 
     public void setUser(User user) { this.user = user; }
 
-    public void setRole(String role) { this.role = role; }
+    public void setRole(TeamRole role) { this.role = role; }
 
 }

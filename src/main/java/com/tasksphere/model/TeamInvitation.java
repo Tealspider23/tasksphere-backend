@@ -1,8 +1,8 @@
 package com.tasksphere.model;
 
 
+import com.tasksphere.enums.TeamRole;
 import jakarta.persistence.*;
-import jakarta.persistence.criteria.CriteriaBuilder;
 
 import java.time.Instant;
 
@@ -26,8 +26,9 @@ public class TeamInvitation {
     @Column(nullable = false)
     private String email;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String role = "MEMBER";
+    private TeamRole role;
 
     @Column(nullable = false)
     private Instant createdAt = Instant.now();
@@ -40,7 +41,7 @@ public class TeamInvitation {
 
     public String getEmail() { return email; }
 
-    public String getRole() { return role; }
+    public TeamRole getRole() { return role; }
 
     public Instant getCreatedAt() { return createdAt; }
 
@@ -48,6 +49,6 @@ public class TeamInvitation {
 
     public void setEmail(String email) { this.email = email; }
 
-    public void setRole(String role) { this.role = role; }
+    public void setRole(TeamRole role) { this.role = role; }
 
 }
